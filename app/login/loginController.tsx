@@ -4,10 +4,10 @@ export class LoginController {
   static async handleLogin(email: string, password: string): Promise<boolean> {
     try {
       const loginModel = new LoginModel(email, password);
-      const token = await loginModel.login();
+      const data = await loginModel.login();
       
-      if (token) {
-        localStorage.setItem('token', token);
+      if (data) {
+        localStorage.setItem('user', data);
         return true;
       }
       return false;

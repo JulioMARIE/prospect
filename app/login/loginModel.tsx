@@ -1,6 +1,6 @@
-export interface LoginResponse {
-    token: string;
-  }
+// export interface LoginResponse {
+//     token: string;
+//   }
   
   export class LoginModel {
     constructor(private email: string, private password: string) {}
@@ -22,8 +22,8 @@ export interface LoginResponse {
           throw new Error('Erreur de connexion');
         }
   
-        const data: LoginResponse = await response.json();
-        return data.token;
+        const data = await response.json();
+        return data;
       } catch (error) {
         console.error('Erreur lors de la connexion:', error);
         throw error;

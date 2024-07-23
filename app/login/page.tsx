@@ -26,6 +26,8 @@ export default function Login() {
     onSubmit: async (values, { setSubmitting }: FormikHelpers<LoginFormValues>) => {
       const success = await LoginController.handleLogin(values.email, values.password);
       if (success) {
+        const user = localStorage.getItem('user');    
+    
         router.push('/dashboard'); // ou toute autre page principale
       } else {
         // Gérer l'échec de connexion, par exemple en affichant un message d'erreur
