@@ -2,20 +2,38 @@
 
 import React, { useState } from 'react';
 // import Image from 'next/image';
-import { useFormik } from 'formik';
+import { FormikHelpers, useFormik } from 'formik';
 import { loginSchema } from '../constants/validationSchema';
 import { initialValues } from '../utils/formUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { LoginController } from '../login/loginController';
+import { useRouter } from 'next/navigation';
+
+interface LoginFormValues {
+  email: string;
+  password: string;
+}
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
-  const formik = useFormik({
+  const router = useRouter();
+
+  const formik = useFormik<LoginFormValues>({
     initialValues,
     validationSchema: loginSchema,
-    onSubmit: (values) => {
-      console.log('Form submitted successfully', values);
+    onSubmit: async (values, { setSubmitting }: FormikHelpers<LoginFormValues>) => {
+      const success = await LoginController.handleLogin(values.email, values.password);
+      if (success) {
+        const user = localStorage.getItem('user');    
+    
+        router.push('responsable/dash'); // ou toute autre page principale
+      } else {
+        // Gérer l'échec de connexion, par exemple en affichant un message d'erreur
+        console.log('Échec de la connexion');
+      }
+      setSubmitting(false);
     },
   });
 
@@ -23,7 +41,7 @@ export default function Login() {
     <main className="flex min-h-screen items-center justify-center bg-gray-100 p-6">
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold text-center mb-6 text-purple-600">
-         Admin
+          Se connecter à votre espace responsable
         </h2>
         <form className="space-y-6" onSubmit={formik.handleSubmit}>
           <div>

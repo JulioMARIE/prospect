@@ -28,7 +28,7 @@ export default function Login() {
       if (success) {
         const user = localStorage.getItem('user');    
     
-        router.push('/dashboard'); // ou toute autre page principale
+        router.push('responsable/dash'); // ou toute autre page principale
       } else {
         // Gérer l'échec de connexion, par exemple en affichant un message d'erreur
         console.log('Échec de la connexion');

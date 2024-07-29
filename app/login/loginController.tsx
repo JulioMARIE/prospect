@@ -7,6 +7,9 @@ export class LoginController {
       const data = await loginModel.login();
       
       if (data) {
+        // Afficher le contenu de la réponse
+        console.log('Réponse de l\'API c:', data);
+        
         localStorage.setItem('user', data);
         return true;
       }
