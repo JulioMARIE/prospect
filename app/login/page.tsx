@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-// import Image from 'next/image';
 import { FormikHelpers, useFormik } from 'formik';
 import { loginSchema } from '../constants/validationSchema';
 import { initialValues } from '../utils/formUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faEyeSlash, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { LoginController } from '../login/loginController';
 import { useRouter } from 'next/navigation';
 import withAuth from '../utils/withAuth';
@@ -18,6 +17,7 @@ interface LoginFormValues {
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
 
@@ -25,15 +25,16 @@ const Login = () => {
     initialValues,
     validationSchema: loginSchema,
     onSubmit: async (values, { setSubmitting }: FormikHelpers<LoginFormValues>) => {
+      setIsLoading(true);  // Set loading to true when the request starts
       const success = await LoginController.handleLogin(values.email, values.password);
       if (success) {
-        const user = localStorage.getItem('user');    
-    
+        const user = localStorage.getItem('user');
         router.push('/');
       } else {
-        // Gérer l'échec de connexion, par exemple en affichant un message d'erreur
+        // Handle login failure
         console.log('Échec de la connexion');
       }
+      setIsLoading(false); // Set loading to false when the request is complete
       setSubmitting(false);
     },
   });
@@ -102,7 +103,7 @@ const Login = () => {
           </div>
           <div className="text-right">
             <a
-              href="/admin"
+              href="/forgotpwd"
               className="text-sm text-purple-600 hover:text-purple-500"
             >
               Mot de passe oublié?
@@ -111,9 +112,16 @@ const Login = () => {
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+              disabled={isLoading}  // Disable the button while loading
+              className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 ${
+                isLoading ? 'bg-purple-300 cursor-not-allowed' : ''
+              }`}
             >
-              Se connecter
+              {isLoading ? (
+                <FontAwesomeIcon icon={faSpinner} spin />
+              ) : (
+                'Se connecter'
+              )}
             </button>
           </div>
         </form>
@@ -122,4 +130,4 @@ const Login = () => {
   );
 }
 
-export default withAuth(Login)
+export default withAuth(Login);

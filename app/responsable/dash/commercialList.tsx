@@ -221,7 +221,7 @@ export default function CommercialList() {
 
   return (
     <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Liste des Commerciaux</h2>
+      <h2 className="text-2xl font-bold mb-4">Liste des commerciaux</h2>
       <div className="mb-4 flex justify-between items-center">
         <div className="relative w-64">
           <input
@@ -300,7 +300,7 @@ export default function CommercialList() {
           {filteredList.length > 0 ? (
             <ul>
               {filteredList.map((commercial) => (
-                <li key={commercial.id} className="mb-4 p-4 border rounded-md">
+                <li key={commercial.id} className="mb-4 p-4 border rounded-md bg-white shadow-md rounded-lg overflow-hidden">
                   <div className="flex justify-between items-center mb-2">
                     <div>
                       <h3 className="text-xl font-bold">

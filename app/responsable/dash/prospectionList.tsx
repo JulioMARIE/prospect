@@ -1,98 +1,220 @@
-'use client';
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faEye } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrash, faSearch, faPlus, faSpinner, faList } from '@fortawesome/free-solid-svg-icons';
+import api from '../../utils/api';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-interface Prospection {
+interface FollowUp {
   id: number;
-  commercialId: number;
-  commercialNom: string;
-  dateProspection: string;
-  entreprise: string;
-  contact: string;
-  statut: 'En cours' | 'Terminé' | 'Annulé';
+  date_heure: string;
+  observation: string;
+  prospection_id: number;
 }
 
-const prospections: Prospection[] = [
-  { id: 1, commercialId: 1, commercialNom: 'Jean Dubois', dateProspection: '2024-02-15', entreprise: 'Entreprise A', contact: 'Marie Dupont', statut: 'En cours' },
-  { id: 2, commercialId: 2, commercialNom: 'Sophie Martin', dateProspection: '2024-02-16', entreprise: 'Entreprise B', contact: 'Paul Martin', statut: 'Terminé' },
-  { id: 3, commercialId: 3, commercialNom: 'Pierre Bernard', dateProspection: '2024-02-17', entreprise: 'Entreprise C', contact: 'Lucie Durand', statut: 'Annulé' },
-];
+interface Prospect {
+  id: number;
+  date_heure: string;
+  personne_rencontree: string;
+  contact_pers_rencont: string;
+  fonction_pers_rencont: string;
+  logiciels: string;
+  observations: string;
+  commercial_id: number;
+  societe_id: number;
+  prospection: {
+    id: number;
+    utilisateur: {
+      id: number;
+      nom: string;
+      prenom: string;
+      email: string;
+    };
+  };
+  societe: {
+    id: number;
+    denomination: string;
+    raison_sociale: string;
+    IFU: string;
+    description_siege: string;
+    commune_id: number;
+  };
+  suivis: FollowUp[];
+}
 
 export default function ProspectionList() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [prospectionsList, setProspectionsList] = useState<Prospection[]>(prospections);
+  const [prospectionsList, setCommerciauxList] = useState<Prospect[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [quotasToShow, setQuotasToShow] = useState<{ [key: number]: boolean }>({});
 
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const term = event.target.value.toLowerCase();
-    setSearchTerm(term);
-    const filteredList = prospections.filter(
-      (prospection) =>
-        prospection.commercialNom.toLowerCase().includes(term) ||
-        prospection.entreprise.toLowerCase().includes(term) ||
-        prospection.contact.toLowerCase().includes(term)
-    );
-    setProspectionsList(filteredList);
+  useEffect(() => {
+    fetchProspections();
+  }, []);
+
+  const fetchProspections = async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get('/responsable/prospections');
+      setCommerciauxList(response.data);
+    } catch (error) {
+      toast.error('Erreur lors de la récupération des prospections');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleViewDetails = (id: number) => {
-    // Logique pour afficher les détails de la prospection
-    console.log(`Afficher les détails de la prospection avec l'ID ${id}`);
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value.toLowerCase());
+  };
+
+  const filteredList = prospectionsList.filter(
+    (prospection) =>
+      prospection.date_heure.toLowerCase().includes(searchTerm) ||
+      prospection.societe.denomination.toLowerCase().includes(searchTerm) ||
+      prospection.observations.toLowerCase().includes(searchTerm)
+  );
+
+  const handleDelete = async (id: number) => {
+    setIsLoading(true);
+    try {
+      console.log(`del :/responsable/prospections/${id}`);
+      await api.delete(`/responsable/prospections/${id}`);
+      toast.success('Prospection supprimée avec succès!');
+      fetchProspections();
+    } catch (error) {
+      toast.error('Erreur lors de la suppression de la prospection');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteQuota = async (id: number) => {
+    setIsLoading(true);
+    try {
+      await api.delete(`/responsable/suivis/${id}`);
+      toast.success('Suivi supprimé avec succès!');
+      fetchProspections();
+    } catch (error) {
+      toast.error('Erreur lors de la suppression du suivi');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleSuivis = (prospectionId: number) => {
+    setQuotasToShow((prev) => ({
+      ...prev,
+      [prospectionId]: !prev[prospectionId],
+    }));
   };
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Liste des Prospections</h2>
-      <div className="mb-4 relative">
-        <input
-          type="text"
-          placeholder="Rechercher une prospection..."
-          className="w-full px-4 py-2 border rounded-md"
-          value={searchTerm}
-          onChange={handleSearch}
-        />
-        <FontAwesomeIcon icon={faSearch} className="absolute right-3 top-3 text-gray-400" />
+    <div className="container mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Liste des prospections</h2>
+      <div className="mb-4 flex justify-between items-center">
+        <div className="relative w-64">
+          <input
+            type="text"
+            placeholder="Rechercher une prospection..."
+            className="w-full px-4 py-2 border rounded-md"
+            value={searchTerm}
+            onChange={handleSearch}
+          />
+          <FontAwesomeIcon icon={faSearch} className="absolute right-3 top-3 text-gray-400" />
+        </div>
       </div>
-      <table className="min-w-full bg-white border border-gray-300">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="py-2 px-4 border-b">Commercial</th>
-            <th className="py-2 px-4 border-b">Date</th>
-            <th className="py-2 px-4 border-b">Entreprise</th>
-            <th className="py-2 px-4 border-b">Contact</th>
-            <th className="py-2 px-4 border-b">Statut</th>
-            <th className="py-2 px-4 border-b">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {prospectionsList.map((prospection) => (
-            <tr key={prospection.id}>
-              <td className="py-2 px-4 border-b">{prospection.commercialNom}</td>
-              <td className="py-2 px-4 border-b">{prospection.dateProspection}</td>
-              <td className="py-2 px-4 border-b">{prospection.entreprise}</td>
-              <td className="py-2 px-4 border-b">{prospection.contact}</td>
-              <td className="py-2 px-4 border-b">
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  prospection.statut === 'En cours' ? 'bg-yellow-200 text-yellow-800' :
-                  prospection.statut === 'Terminé' ? 'bg-green-200 text-green-800' :
-                  'bg-red-200 text-red-800'
-                }`}>
-                  {prospection.statut}
-                </span>
-              </td>
-              <td className="py-2 px-4 border-b">
-                <button
-                  onClick={() => handleViewDetails(prospection.id)}
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  <FontAwesomeIcon icon={faEye} />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      <ToastContainer />
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <FontAwesomeIcon icon={faSpinner} spin size="2x" />
+        </div>
+      ) : (
+        <div>
+          {filteredList.length > 0 ? (
+            <table className="min-w-full bg-white border border-gray-200">
+              <thead>
+                <tr className="border-b bg-gray-100">
+                  <th className="p-3 text-left">Date</th>
+                  <th className="p-3 text-left">Société</th>
+                  <th className="p-3 text-left">Personne rencontrée</th>
+                  <th className="p-3 text-left">Contact</th>
+                  <th className="p-3 text-left">Fonction</th>
+                  <th className="p-3 text-left">Observations</th>
+                  <th className="p-3 text-left">Actions</th>
+                  <th className="p-3 text-left">Suivis</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredList.map((prospection) => (
+                  <React.Fragment key={prospection.id}>
+                    <tr className="border-b">
+                      <td className="p-3">{prospection.date_heure}</td>
+                      <td className="p-3">{prospection.societe.denomination} {prospection.societe.IFU}</td>
+                      <td className="p-3">{prospection.personne_rencontree}</td>
+                      <td className="p-3">{prospection.contact_pers_rencont}</td>
+                      <td className="p-3">{prospection.fonction_pers_rencont}</td>
+                      <td className="p-3">{prospection.observations}</td>
+                      <td className="p-3">
+                        <button
+                          onClick={() => handleDelete(prospection.id)}
+                          className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </td>
+                      <td className="p-3">
+                        <button
+                          onClick={() => toggleSuivis(prospection.id)}
+                          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded"
+                        >
+                          Suivi(s) <FontAwesomeIcon icon={faList} className="mr-2" />
+                          {prospection.suivis.length}
+                        </button>
+                      </td>
+                    </tr>
+                    {quotasToShow[prospection.id] && (
+                      <tr>
+                        <td colSpan={9} className="p-4 bg-gray-100">
+                          {prospection.suivis.length > 0 ? (
+                            <ul>
+                              {prospection.suivis.map((suivi) => (
+                                <li
+                                  key={suivi.id}
+                                  className="p-2 mb-2 border rounded-md"
+                                >
+                                  <div className="flex justify-between items-center">
+                                    <div>
+                                      <p>Date: {new Date(suivi.date_heure).toLocaleDateString()}</p>
+                                      <p>Observation: {suivi.observation}</p>
+                                    </div>
+                                    {/* <button
+                                      onClick={() => handleDeleteQuota(suivi.id)}
+                                      className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
+                                    >
+                                      <FontAwesomeIcon icon={faTrash} />
+                                    </button> */}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>Aucun suivi trouvé.</p>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>Aucune prospection trouvée.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
