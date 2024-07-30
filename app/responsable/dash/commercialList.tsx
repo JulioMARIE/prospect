@@ -1,9 +1,20 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faSearch, faPlus, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrash, faSearch, faPlus, faSpinner, faList } from '@fortawesome/free-solid-svg-icons';
 import api from '../../utils/api';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import * as Yup from 'yup';
+import { useFormik } from 'formik';
+
+interface Quota {
+  id: number;
+  date_debut: string;
+  date_fin: string;
+  nombre_fixe: number;
+  nombre_fait: number;
+  statut: number;
+}
 
 interface Commercial {
   id: number;
@@ -13,7 +24,16 @@ interface Commercial {
     prenom: string;
     email: string;
   };
+  quotas: Quota[];
 }
+
+const quotaValidationSchema = Yup.object().shape({
+  date_debut: Yup.date().required('Date début est requise'),
+  date_fin: Yup.date()
+    .min(Yup.ref('date_debut'), 'Date fin doit être après la date début')
+    .required('Date fin est requise'),
+  nombre_fixe: Yup.number().positive('Nombre fixe doit être un nombre positif').required('Nombre fixe est requis'),
+});
 
 export default function CommercialList() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,6 +42,35 @@ export default function CommercialList() {
   const [newCommercial, setNewCommercial] = useState({ nom: '', prenom: '', email: '' });
   const [editingCommercial, setEditingCommercial] = useState<Commercial | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [quotasToShow, setQuotasToShow] = useState<{ [key: number]: boolean }>({});
+  const [showAddQuotaForm, setShowAddQuotaForm] = useState<{ [key: number]: boolean }>({});
+  const [editingQuota, setEditingQuota] = useState<Quota | null>(null);
+
+  const formik = useFormik({
+    initialValues: {
+      date_debut: '',
+      date_fin: '',
+      nombre_fixe: 0,
+    },
+    validationSchema: quotaValidationSchema,
+    onSubmit: async (values) => {
+      const commercialId = Object.keys(showAddQuotaForm)[0];
+      if (commercialId) {
+        try {
+          await api.post('/responsable/addquota/', {
+            ...values,
+            commercial_id: parseInt(commercialId),
+          });
+          toast.success('Quota ajouté avec succès!');
+          fetchCommerciaux();
+          setShowAddQuotaForm((prev) => ({ ...prev, [parseInt(commercialId)]: false }));
+          formik.resetForm();
+        } catch (error) {
+          toast.error('Erreur lors de l\'ajout du quota');
+        }
+      }
+    },
+  });
 
   useEffect(() => {
     fetchCommerciaux();
@@ -33,15 +82,14 @@ export default function CommercialList() {
       const response = await api.get('/responsable/commercials');
       setCommerciauxList(response.data);
     } catch (error) {
-      console.error('Erreur lors de la récupération des commerciaux:', error);
+      toast.error('Erreur lors de la récupération des commerciaux');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const term = event.target.value.toLowerCase();
-    setSearchTerm(term);
+    setSearchTerm(event.target.value.toLowerCase());
   };
 
   const filteredList = commerciauxList.filter(
@@ -65,9 +113,23 @@ export default function CommercialList() {
     setIsLoading(true);
     try {
       await api.delete(`/responsable/commercials/${id}`);
+      toast.success('Commercial supprimé avec succès!');
       fetchCommerciaux();
     } catch (error) {
-      console.error('Erreur lors de la suppression du commercial:', error);
+      toast.error('Erreur lors de la suppression du commercial');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteQuota = async (id: number) => {
+    setIsLoading(true);
+    try {
+      await api.delete(`/responsable/quotas/${id}`);
+      toast.success('Quota supprimé avec succès!');
+      fetchCommerciaux();
+    } catch (error) {
+      toast.error('Erreur lors de la suppression du quota');
     } finally {
       setIsLoading(false);
     }
@@ -79,18 +141,28 @@ export default function CommercialList() {
     try {
       if (editingCommercial) {
         await api.put(`/responsable/commercials/${editingCommercial.id}`, newCommercial);
+        toast.success('Commercial modifié avec succès!');
       } else {
         await api.post('/responsable/commercials', newCommercial);
+        toast.success('Commercial ajouté avec succès!');
       }
       fetchCommerciaux();
       setShowAddForm(false);
       setNewCommercial({ nom: '', prenom: '', email: '' });
       setEditingCommercial(null);
     } catch (error) {
-      console.error('Erreur lors de l\'ajout/modification du commercial:', error);
+      toast.error('Erreur lors de l\'ajout/modification du commercial');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const toggleQuotas = (commercialId: number) => {
+    setQuotasToShow((prev) => ({
+      ...prev,
+      [commercialId]: !prev[commercialId],
+    }));
+    setShowAddQuotaForm((prev) => ({ ...prev, [commercialId]: false }));
   };
 
   return (
@@ -127,7 +199,7 @@ export default function CommercialList() {
               type="text"
               placeholder="Nom"
               value={newCommercial.nom}
-              onChange={(e) => setNewCommercial({...newCommercial, nom: e.target.value})}
+              onChange={(e) => setNewCommercial({ ...newCommercial, nom: e.target.value })}
               className="px-4 py-2 border rounded-md"
               required
             />
@@ -135,7 +207,7 @@ export default function CommercialList() {
               type="text"
               placeholder="Prénom"
               value={newCommercial.prenom}
-              onChange={(e) => setNewCommercial({...newCommercial, prenom: e.target.value})}
+              onChange={(e) => setNewCommercial({ ...newCommercial, prenom: e.target.value })}
               className="px-4 py-2 border rounded-md"
               required
             />
@@ -143,7 +215,7 @@ export default function CommercialList() {
               type="email"
               placeholder="Email"
               value={newCommercial.email}
-              onChange={(e) => setNewCommercial({...newCommercial, email: e.target.value})}
+              onChange={(e) => setNewCommercial({ ...newCommercial, email: e.target.value })}
               className="px-4 py-2 border rounded-md"
               required
             />
@@ -152,52 +224,178 @@ export default function CommercialList() {
             <button type="submit" className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2">
               {editingCommercial ? 'Modifier' : 'Ajouter'}
             </button>
-            <button type="button" onClick={() => setShowAddForm(false)} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+            <button
+              type="button"
+              onClick={() => setShowAddForm(false)}
+              className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+            >
               Annuler
             </button>
           </div>
         </form>
       )}
 
-      {isLoading && (
-        <div className="flex justify-center items-center my-4">
+      <ToastContainer />
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
           <FontAwesomeIcon icon={faSpinner} spin size="2x" />
         </div>
-      )}
+      ) : (
+        <div>
+          {filteredList.length > 0 ? (
+            <ul>
+              {filteredList.map((commercial) => (
+                <li key={commercial.id} className="mb-4 p-4 border rounded-md">
+                  <div className="flex justify-between items-center mb-2">
+                    <div>
+                      <h3 className="text-xl font-bold">
+                        {commercial.utilisateur.nom} {commercial.utilisateur.prenom}
+                      </h3>
+                      <p className="text-gray-600">{commercial.utilisateur.email}</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEdit(commercial)}
+                        className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded"
+                      >
+                        <FontAwesomeIcon icon={faEdit} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(commercial.id)}
+                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </div>
+                  </div>
 
-      <table className="min-w-full bg-white border border-gray-300">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="py-2 px-4 border-b">Nom</th>
-            <th className="py-2 px-4 border-b">Prénom</th>
-            <th className="py-2 px-4 border-b">Email</th>
-            <th className="py-2 px-4 border-b">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredList.map((commercial) => (
-            <tr key={commercial.id}>
-              <td className="py-2 px-4 border-b">{commercial.utilisateur.nom}</td>
-              <td className="py-2 px-4 border-b">{commercial.utilisateur.prenom}</td>
-              <td className="py-2 px-4 border-b">{commercial.utilisateur.email}</td>
-              <td className="py-2 px-4 border-b">
-                <button
-                  onClick={() => handleEdit(commercial)}
-                  className="text-blue-500 hover:text-blue-700 mr-2"
-                >
-                  <FontAwesomeIcon icon={faEdit} />
-                </button>
-                <button
-                  onClick={() => handleDelete(commercial.id)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <FontAwesomeIcon icon={faTrash} />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  <button
+                    onClick={() => toggleQuotas(commercial.id)}
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2"
+                  >
+                    <FontAwesomeIcon icon={faList} className="mr-2" />
+                    Quotas ({commercial.quotas.length})
+                  </button>
+
+                  {quotasToShow[commercial.id] && (
+                    <div className="border-t mt-4 pt-2">
+                      {commercial.quotas.length > 0 ? (
+                        <ul>
+                          {commercial.quotas.map((quota) => (
+                            <li
+                              key={quota.id}
+                              className={`p-2 mb-2 rounded-md ${quota.statut === 0 ? 'bg-red-100' : 'bg-green-100'}`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <p>Date début: {new Date(quota.date_debut).toLocaleDateString()}</p>
+                                  <p>Date fin: {new Date(quota.date_fin).toLocaleDateString()}</p>
+                                  <p>Nombre fixe: {quota.nombre_fixe}</p>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => {
+                                      setEditingQuota(quota);
+                                      formik.setValues({
+                                        date_debut: quota.date_debut,
+                                        date_fin: quota.date_fin,
+                                        nombre_fixe: quota.nombre_fixe,
+                                      });
+                                      setShowAddQuotaForm((prev) => ({
+                                        ...prev,
+                                        [commercial.id]: true,
+                                      }));
+                                    }}
+                                    className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded"
+                                  >
+                                    <FontAwesomeIcon icon={faEdit} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteQuota(quota.id)}
+                                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
+                                  >
+                                    <FontAwesomeIcon icon={faTrash} />
+                                  </button>
+                                </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>Aucun quota trouvé.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {showAddQuotaForm[commercial.id] && (
+                    <form onSubmit={formik.handleSubmit} className="mt-4 p-4 border rounded-md">
+                      <div className="grid grid-cols-1 gap-4">
+                        <input
+                          type="date"
+                          name="date_debut"
+                          onChange={formik.handleChange}
+                          onBlur={formik.handleBlur}
+                          value={formik.values.date_debut}
+                          className="px-4 py-2 border rounded-md"
+                        />
+                        {formik.touched.date_debut && formik.errors.date_debut ? (
+                          <div className="text-red-500">{formik.errors.date_debut}</div>
+                        ) : null}
+
+                        <input
+                          type="date"
+                          name="date_fin"
+                          onChange={formik.handleChange}
+                          onBlur={formik.handleBlur}
+                          value={formik.values.date_fin}
+                          className="px-4 py-2 border rounded-md"
+                        />
+                        {formik.touched.date_fin && formik.errors.date_fin ? (
+                          <div className="text-red-500">{formik.errors.date_fin}</div>
+                        ) : null}
+
+                        <input
+                          type="number"
+                          name="nombre_fixe"
+                          onChange={formik.handleChange}
+                          onBlur={formik.handleBlur}
+                          value={formik.values.nombre_fixe}
+                          className="px-4 py-2 border rounded-md"
+                        />
+                        {formik.touched.nombre_fixe && formik.errors.nombre_fixe ? (
+                          <div className="text-red-500">{formik.errors.nombre_fixe}</div>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          type="submit"
+                          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2"
+                        >
+                          {editingQuota ? 'Modifier' : 'Ajouter'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddQuotaForm((prev) => ({
+                            ...prev,
+                            [commercial.id]: false,
+                          }))}
+                          className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>Aucun commercial trouvé.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

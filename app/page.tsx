@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import CommercialList from './responsable/dash/commercialList';
-import QuotaList from './responsable/dash/quotaList';
+// import QuotaList from './responsable/dash/quotaList';
 import ProspectionList from './responsable/dash/prospectionList';
 import PermissionManagement from './responsable/dash/permissionManagement';
 import ChangePassword from './responsable/dash/changePassword';
@@ -23,7 +23,7 @@ const ResponsableDashboard = () => {
     <div className="flex h-screen bg-gray-100">
       <div className="w-64 bg-white shadow-md">
         <div className="p-4">
-          <h2 className="text-xl font-semibold text-purple-600">Dashboard</h2>
+          <h2 className="text-xl font-semibold text-purple-600">Tableau de bord</h2>
         </div>
         <nav className="mt-4">
           <button
@@ -32,12 +32,12 @@ const ResponsableDashboard = () => {
           >
             Commerciaux
           </button>
-          <button
+          {/* <button
             className={`w-full text-left p-4 ${activeTab === 'quotas' ? 'bg-purple-100 text-purple-600' : ''}`}
             onClick={() => setActiveTab('quotas')}
           >
             Quotas
-          </button>
+          </button> */}
           <button
             className={`w-full text-left p-4 ${activeTab === 'prospections' ? 'bg-purple-100 text-purple-600' : ''}`}
             onClick={() => setActiveTab('prospections')}
@@ -68,7 +68,7 @@ const ResponsableDashboard = () => {
       {/* Main content */}
       <div className="flex-1 p-8 overflow-auto">
         {activeTab === 'commercials' && <CommercialList />}
-        {activeTab === 'quotas' && <QuotaList />}
+        {/* {activeTab === 'quotas' && <QuotaList />} */}
         {activeTab === 'prospections' && <ProspectionList />}
         {activeTab === 'permissions' && <PermissionManagement />}
         {activeTab === 'profile' && <ChangePassword />}
