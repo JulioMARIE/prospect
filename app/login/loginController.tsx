@@ -4,13 +4,11 @@ export class LoginController {
   static async handleLogin(email: string, password: string): Promise<boolean> {
     try {
       const loginModel = new LoginModel(email, password);
-      const data = await loginModel.login();
+      const result = await loginModel.login();
       
-      if (data) {
-        // Afficher le contenu de la réponse
-        console.log('Réponse de l\'API c:', data);
-        
-        localStorage.setItem('user', data);
+      if (result) {
+        localStorage.setItem('user', JSON.stringify(result.user));
+        localStorage.setItem('token', result.token);
         return true;
       }
       return false;

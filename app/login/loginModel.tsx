@@ -4,8 +4,8 @@
   
   export class LoginModel {
     constructor(private email: string, private password: string) {}
-  
-    async login(): Promise<string> {
+
+    async login(): Promise<{ user: any, token: string } | null> {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/responsableLogin`, {
           method: 'POST',
@@ -18,13 +18,20 @@
           }),
         });
   
-        if (!response) {
+        if (!response.ok) {
           throw new Error('Erreur de connexion');
         }
   
         const data = await response.json();
         
-        return data;
+        if (data.responsable && data.token) {
+          return {
+            user: data.responsable,
+            token: data.token
+          };
+        }
+  
+        return null;
       } catch (error) {
         console.error('Erreur lors de la connexion:', error);
         throw error;
