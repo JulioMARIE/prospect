@@ -42,35 +42,76 @@ export default function CommercialList() {
   const [newCommercial, setNewCommercial] = useState({ nom: '', prenom: '', email: '' });
   const [editingCommercial, setEditingCommercial] = useState<Commercial | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingQuota, setIsLoadingQuota] = useState(false);
   const [quotasToShow, setQuotasToShow] = useState<{ [key: number]: boolean }>({});
   const [showAddQuotaForm, setShowAddQuotaForm] = useState<{ [key: number]: boolean }>({});
   const [editingQuota, setEditingQuota] = useState<Quota | null>(null);
+
+  const handleQuotaSubmit = async (values: any, { resetForm }: any) => {
+    setIsLoadingQuota(true);
+    const commercialId = Object.keys(showAddQuotaForm).find(id => showAddQuotaForm[parseInt(id)]);
+    if (commercialId) {
+      try {
+        if (editingQuota) {
+          await api.put(`/responsable/quotas/${editingQuota.id}`, {
+            ...values,
+            commercial_id: parseInt(commercialId),
+          });
+          toast.success('Quota modifié avec succès!');
+        } else {
+          await api.post('/responsable/addquota/', {
+            ...values,
+            commercial_id: parseInt(commercialId),
+          });
+          toast.success('Opération effectuée avec succès!');
+        }
+        setIsLoadingQuota(false);
+        fetchCommerciaux();
+        setShowAddQuotaForm((prev) => ({ ...prev, [parseInt(commercialId)]: false }));
+        resetForm();
+        setEditingQuota(null);
+      } catch (error) {
+        toast.error(`Erreur lors de ${editingQuota ? 'la modification' : "l'ajout"} du quota`);
+        setIsLoadingQuota(false);
+      }
+    }
+  };
 
   const formik = useFormik({
     initialValues: {
       date_debut: '',
       date_fin: '',
-      nombre_fixe: 0,
+      nombre_fixe: 1,
     },
     validationSchema: quotaValidationSchema,
-    onSubmit: async (values) => {
-      const commercialId = Object.keys(showAddQuotaForm)[0];
-      if (commercialId) {
-        try {
-          await api.post('/responsable/addquota/', {
-            ...values,
-            commercial_id: parseInt(commercialId),
-          });
-          toast.success('Quota ajouté avec succès!');
-          fetchCommerciaux();
-          setShowAddQuotaForm((prev) => ({ ...prev, [parseInt(commercialId)]: false }));
-          formik.resetForm();
-        } catch (error) {
-          toast.error('Erreur lors de l\'ajout du quota');
-        }
-      }
-    },
+    onSubmit: handleQuotaSubmit,
   });
+
+  // const formik = useFormik({
+  //   initialValues: {
+  //     date_debut: '',
+  //     date_fin: '',
+  //     nombre_fixe: 1,
+  //   },
+  //   validationSchema: quotaValidationSchema,
+  //   onSubmit: async (values) => {
+  //     const commercialId = Object.keys(showAddQuotaForm)[0];
+  //     if (commercialId) {
+  //       try {
+  //         await api.post('/responsable/addquota/', {
+  //           ...values,
+  //           commercial_id: parseInt(commercialId),
+  //         });
+  //         toast.success('Opération effectuée avec succès!');
+  //         fetchCommerciaux();
+  //         setShowAddQuotaForm((prev) => ({ ...prev, [parseInt(commercialId)]: false }));
+  //         formik.resetForm();
+  //       } catch (error) {
+  //         toast.error('Erreur lors de l\'ajout du quota');
+  //       }
+  //     }
+  //   },
+  // });
 
   useEffect(() => {
     fetchCommerciaux();
@@ -155,6 +196,19 @@ export default function CommercialList() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEditQuota = (quota: Quota, commercialId: number) => {
+    setEditingQuota(quota);
+    formik.setValues({
+      date_debut: quota.date_debut,
+      date_fin: quota.date_fin,
+      nombre_fixe: quota.nombre_fixe,
+    });
+    setShowAddQuotaForm((prev) => ({
+      ...prev,
+      [commercialId]: true,
+    }));
   };
 
   const toggleQuotas = (commercialId: number) => {
@@ -270,13 +324,26 @@ export default function CommercialList() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => toggleQuotas(commercial.id)}
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2"
-                  >
-                    <FontAwesomeIcon icon={faList} className="mr-2" />
-                    Quotas ({commercial.quotas.length})
-                  </button>
+                  <div className='flex justify-between mb-2'>
+  <button
+    onClick={() => toggleQuotas(commercial.id)}
+    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+  >
+    <FontAwesomeIcon icon={faList} className="mr-2" />
+    Quotas ({commercial.quotas.length})
+  </button>
+  <button
+    onClick={() => {
+      setShowAddQuotaForm((prev) => ({ ...prev, [commercial.id]: true }));
+      setEditingQuota(null);
+      formik.resetForm();
+    }}
+    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+  >
+    <FontAwesomeIcon icon={faPlus} className="mr-2" />
+    Ajouter quota
+  </button>
+</div>
 
                   {quotasToShow[commercial.id] && (
                     <div className="border-t mt-4 pt-2">
@@ -292,20 +359,12 @@ export default function CommercialList() {
                                   <p>Date début: {new Date(quota.date_debut).toLocaleDateString()}</p>
                                   <p>Date fin: {new Date(quota.date_fin).toLocaleDateString()}</p>
                                   <p>Nombre fixe: {quota.nombre_fixe}</p>
+                                  <p>Nombre réalisé: {quota.nombre_fait}</p>
                                 </div>
                                 <div className="flex space-x-2">
                                   <button
                                     onClick={() => {
-                                      setEditingQuota(quota);
-                                      formik.setValues({
-                                        date_debut: quota.date_debut,
-                                        date_fin: quota.date_fin,
-                                        nombre_fixe: quota.nombre_fixe,
-                                      });
-                                      setShowAddQuotaForm((prev) => ({
-                                        ...prev,
-                                        [commercial.id]: true,
-                                      }));
+                                      handleEditQuota(quota, commercial.id);
                                     }}
                                     className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded"
                                   >
@@ -330,45 +389,54 @@ export default function CommercialList() {
 
                   {showAddQuotaForm[commercial.id] && (
                     <form onSubmit={formik.handleSubmit} className="mt-4 p-4 border rounded-md">
-                      <div className="grid grid-cols-1 gap-4">
-                        <input
-                          type="date"
-                          name="date_debut"
-                          onChange={formik.handleChange}
-                          onBlur={formik.handleBlur}
-                          value={formik.values.date_debut}
-                          className="px-4 py-2 border rounded-md"
-                        />
-                        {formik.touched.date_debut && formik.errors.date_debut ? (
-                          <div className="text-red-500">{formik.errors.date_debut}</div>
-                        ) : null}
+                      <div className="grid grid-cols-12 gap-4">
+  <div className="col-span-5">
+    <input
+      type="date"
+      name="date_debut"
+      onChange={formik.handleChange}
+      onBlur={formik.handleBlur}
+      value={formik.values.date_debut}
+      className="w-full px-4 py-2 border rounded-md"
+    />
+    {formik.touched.date_debut && formik.errors.date_debut ? (
+      <div className="text-red-500 mt-1">{formik.errors.date_debut}</div>
+    ) : null}
+  </div>
 
-                        <input
-                          type="date"
-                          name="date_fin"
-                          onChange={formik.handleChange}
-                          onBlur={formik.handleBlur}
-                          value={formik.values.date_fin}
-                          className="px-4 py-2 border rounded-md"
-                        />
-                        {formik.touched.date_fin && formik.errors.date_fin ? (
-                          <div className="text-red-500">{formik.errors.date_fin}</div>
-                        ) : null}
+  <div className="col-span-5">
+    <input
+      type="date"
+      name="date_fin"
+      onChange={formik.handleChange}
+      onBlur={formik.handleBlur}
+      value={formik.values.date_fin}
+      className="w-full px-4 py-2 border rounded-md"
+    />
+    {formik.touched.date_fin && formik.errors.date_fin ? (
+      <div className="text-red-500 mt-1">{formik.errors.date_fin}</div>
+    ) : null}
+  </div>
 
-                        <input
-                          type="number"
-                          name="nombre_fixe"
-                          onChange={formik.handleChange}
-                          onBlur={formik.handleBlur}
-                          value={formik.values.nombre_fixe}
-                          className="px-4 py-2 border rounded-md"
-                        />
-                        {formik.touched.nombre_fixe && formik.errors.nombre_fixe ? (
-                          <div className="text-red-500">{formik.errors.nombre_fixe}</div>
-                        ) : null}
-                      </div>
+  <div className="col-span-2">
+    <input
+      type="number"
+      name="nombre_fixe"
+      onChange={formik.handleChange}
+      onBlur={formik.handleBlur}
+      value={formik.values.nombre_fixe}
+      className="w-full px-4 py-2 border rounded-md"
+    />
+    {formik.touched.nombre_fixe && formik.errors.nombre_fixe ? (
+      <div className="text-red-500 mt-1">{formik.errors.nombre_fixe}</div>
+    ) : null}
+  </div>
+</div>
 
-                      <div className="mt-4 flex justify-end">
+{isLoadingQuota ? (<div className="flex justify-center items-center h-7">
+          <FontAwesomeIcon icon={faSpinner} spin size="1x" />
+        </div>) : showAddQuotaForm[commercial.id] &&
+<div className="mt-4 flex justify-end">
                         <button
                           type="submit"
                           className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2"
@@ -385,7 +453,7 @@ export default function CommercialList() {
                         >
                           Annuler
                         </button>
-                      </div>
+                      </div>}
                     </form>
                   )}
                 </li>
