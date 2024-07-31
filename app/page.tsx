@@ -1,99 +1,56 @@
 'use client';
 
-import React, { useState } from 'react';
-import Image from 'next/image';
+
+//Ce code n'utilise pas les getServerProps de Next js.
+//C'est un projet vite fait basé sur un modèle simple
+//Merci Brendan Eich
+
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserCircle, faPlus, faList, faBullseye, faUserCog, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
-import CommercialList from './responsable/dash/commercialList';
-import ProspectionList from './responsable/dash/prospectionList';
-import PermissionManagement from './responsable/dash/permissionManagement';
-import ProfilePage from './responsable/dash/profilPage';
-import withAuth from './utils/withAuth';
 
-const ResponsableDashboard = () => {
-  const [activeTab, setActiveTab] = useState('commercials');
+export default function SplashScreen() {
   const router = useRouter();
+  const [rotation, setRotation] = useState(0);
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const userName = user.utilisateur.nom || 'Utilisateur';
-  const userSurname = user.surname || '';
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/login');
+      } else {
+        // Vérifiez la validité du token ici si nécessaire
+        router.push('/responsable');
+      }
+    };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    router.push('/login');
-  };
+    checkAuth();
+
+    // Animation de rotation
+    const intervalId = setInterval(() => {
+      setRotation((prevRotation) => (prevRotation + 2) % 360);
+    }, (5));
+
+    return () => clearInterval(intervalId);
+  }, [router]);
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div className="bg-purple-800 text-white w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out">
-        <div className="flex justify-center mb-5">
-          <Image src="/logo.png" alt="Logo" width={40} height={40} className="logo-white"/>
-        </div>
-        <nav>
-          <button
-            className={`w-full text-left py-2.5 px-4 rounded transition duration-200 ${activeTab === 'commercials' ? 'bg-purple-700' : 'hover:bg-purple-700'}`}
-            onClick={() => setActiveTab('commercials')}
-          >
-            <FontAwesomeIcon icon={faList} className="mr-2" /> Commerciaux
-          </button>
-          <button
-            className={`w-full text-left py-2.5 px-4 rounded transition duration-200 ${activeTab === 'prospections' ? 'bg-purple-700' : 'hover:bg-purple-700'}`}
-            onClick={() => setActiveTab('prospections')}
-          >
-            <FontAwesomeIcon icon={faBullseye} className="mr-2" /> Prospections
-          </button>
-          <button
-            className={`w-full text-left py-2.5 px-4 rounded transition duration-200 ${activeTab === 'permissions' ? 'bg-purple-700' : 'hover:bg-purple-700'}`}
-            onClick={() => setActiveTab('permissions')}
-          >
-            <FontAwesomeIcon icon={faUserCog} className="mr-2" /> Permissions
-          </button>
-          <button
-            className={`w-full text-left py-2.5 px-4 rounded transition duration-200 ${activeTab === 'profile' ? 'bg-purple-700' : 'hover:bg-purple-700'}`}
-            onClick={() => setActiveTab('profile')}
-          >
-            <FontAwesomeIcon icon={faUserCircle} className="mr-2" /> Profil
-          </button>
-        </nav>
-        <button
-          className="w-full text-left py-2.5 px-4 text-red-300 hover:bg-red-700 hover:text-white rounded transition duration-200"
-          onClick={handleLogout}
-        >
-          <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" /> Déconnexion
-        </button>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-purple-900">
+      <div className="relative w-20 h-20 mb-6">
+        {' '}
+        {/* Cercles concentriques */}
+        <div className="absolute inset-0 border-2 border-purple-300 rounded-full opacity-20"></div>
+        <div className="absolute inset-3 border border-purple-300 rounded-full opacity-40"></div>
+        <div className="absolute inset-6 border border-purple-300 rounded-full opacity-60"></div>
+        {/* Ligne de scan rotative */}
+        <div
+          className="absolute top-0 left-1/2 w-0.5 h-1/2 bg-gradient-to-b from-white to-transparent origin-bottom"
+          style={{ transform: `rotate(${rotation}deg)` }}
+        ></div>
+        {/* Point central */}
+        <div className="absolute inset-0 m-auto w-1 h-1 bg-white rounded-full"></div>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Navbar */}
-        <header className="bg-white shadow-md">
-          <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-purple-800">Prospect</h1>
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faUserCircle} size="2x" className="text-purple-600 mr-2" />
-              <div>
-                <h2 className="text-xl font-semibold text-purple-600">{userName} {userSurname}</h2>
-                <p className="text-sm text-gray-600">Responsable</p>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Page content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200">
-          <div className="container mx-auto px-6 py-8">
-            {activeTab === 'commercials' && <CommercialList />}
-            {activeTab === 'prospections' && <ProspectionList />}
-            {activeTab === 'permissions' && <PermissionManagement />}
-            {activeTab === 'profile' && <div className="h-full flex items-center justify-center"><ProfilePage /></div>}
-          </div>
-        </main>
-      </div>
+      <div className="text-white text-2xl font-bold">Prospect</div>
     </div>
   );
 }
-
-export default withAuth(ResponsableDashboard);

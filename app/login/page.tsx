@@ -9,6 +9,8 @@ import { faEye, faEyeSlash, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { LoginController } from '../login/loginController';
 import { useRouter } from 'next/navigation';
 import withAuth from '../utils/withAuth';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface LoginFormValues {
   email: string;
@@ -29,9 +31,9 @@ const Login = () => {
       const success = await LoginController.handleLogin(values.email, values.password);
       if (success) {
         const user = localStorage.getItem('user');
-        router.push('/');
+        router.push('/responsable');
       } else {
-        // Handle login failure
+        toast.error('Échec de la connexion: Identifiants invalides');
         console.log('Échec de la connexion');
       }
       setIsLoading(false); // Set loading to false when the request is complete
@@ -125,6 +127,7 @@ const Login = () => {
             </button>
           </div>
         </form>
+        <ToastContainer/>
       </div>
     </main>
   );
