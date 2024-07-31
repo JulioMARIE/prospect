@@ -358,7 +358,7 @@ export default function CommercialList() {
                                 <div>
                                   <p>Date début: {new Date(quota.date_debut).toLocaleDateString()}</p>
                                   <p>Date fin: {new Date(quota.date_fin).toLocaleDateString()}</p>
-                                  <p>Nombre fixe: {quota.nombre_fixe}</p>
+                                  <p>Nombre fixé: {quota.nombre_fixe}</p>
                                   <p>Nombre réalisé: {quota.nombre_fait}</p>
                                 </div>
                                 <div className="flex space-x-2">

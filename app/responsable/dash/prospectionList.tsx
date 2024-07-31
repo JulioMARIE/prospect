@@ -22,7 +22,7 @@ interface Prospect {
   observations: string;
   commercial_id: number;
   societe_id: number;
-  prospection: {
+  commercial: {
     id: number;
     utilisateur: {
       id: number;
@@ -71,7 +71,12 @@ export default function ProspectionList() {
   const filteredList = prospectionsList.filter(
     (prospection) =>
       prospection.date_heure.toLowerCase().includes(searchTerm) ||
+      prospection.contact_pers_rencont.toLowerCase().includes(searchTerm) ||
+      prospection.fonction_pers_rencont.toLowerCase().includes(searchTerm) ||
+      prospection.personne_rencontree.toLowerCase().includes(searchTerm) ||
       prospection.societe.denomination.toLowerCase().includes(searchTerm) ||
+      prospection.commercial.utilisateur.nom.toLowerCase().includes(searchTerm) ||
+      prospection.commercial.utilisateur.prenom.toLowerCase().includes(searchTerm) ||
       prospection.observations.toLowerCase().includes(searchTerm)
   );
 
@@ -138,6 +143,7 @@ export default function ProspectionList() {
               <thead>
                 <tr className="border-b bg-gray-100">
                   <th className="p-3 text-left">Date</th>
+                  <th className="p-3 text-left">Commercial</th>
                   <th className="p-3 text-left">Société</th>
                   <th className="p-3 text-left">Personne rencontrée</th>
                   <th className="p-3 text-left">Contact</th>
@@ -152,6 +158,7 @@ export default function ProspectionList() {
                   <React.Fragment key={prospection.id}>
                     <tr className="border-b">
                       <td className="p-3">{prospection.date_heure}</td>
+                      <td className="p-3">{prospection.commercial.utilisateur.nom} {prospection.commercial.utilisateur.prenom}</td>
                       <td className="p-3">{prospection.societe.denomination} {prospection.societe.IFU}</td>
                       <td className="p-3">{prospection.personne_rencontree}</td>
                       <td className="p-3">{prospection.contact_pers_rencont}</td>
