@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+// eslint-disable-next-line react/display-name
 const withAuth = (WrappedComponent: React.ComponentType) => {
   const WithAuthComponent = (props: any) => {
     const router = useRouter();
@@ -12,20 +13,14 @@ const withAuth = (WrappedComponent: React.ComponentType) => {
       if (!token) {
         router.replace('/login');
       }
-    }, [router]); // Ajout de router dans le tableau de dépendances
+    }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return <WrappedComponent {...props} />;
   };
 
-  // Ajout du displayName
-  WithAuthComponent.displayName = `WithAuth(${getDisplayName(WrappedComponent)})`;
+  WithAuthComponent.displayName = `WithAuth(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
 
   return WithAuthComponent;
 };
-
-// Fonction utilitaire pour obtenir le nom d'affichage
-function getDisplayName(WrappedComponent: React.ComponentType) {
-  return WrappedComponent.displayName || WrappedComponent.name || 'Component';
-}
 
 export default withAuth;
