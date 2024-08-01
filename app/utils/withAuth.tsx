@@ -3,9 +3,14 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// eslint-disable-next-line react/display-name
-const withAuth = (WrappedComponent: React.ComponentType) => {
-  const WithAuthComponent = (props: any) => {
+// Define the type for the wrapped component props
+type WrappedComponentProps = {
+  [key: string]: any;
+};
+
+const withAuth = (WrappedComponent: React.ComponentType<WrappedComponentProps>) => {
+  // Add display name for the HOC
+  const WithAuthWrapper: React.FC<WrappedComponentProps> = (props) => {
     const router = useRouter();
 
     useEffect(() => {
@@ -13,14 +18,14 @@ const withAuth = (WrappedComponent: React.ComponentType) => {
       if (!token) {
         router.replace('/login');
       }
-    }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [router]); // Include router in the dependency array
 
     return <WrappedComponent {...props} />;
   };
 
-  WithAuthComponent.displayName = `WithAuth(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+  WithAuthWrapper.displayName = `WithAuth(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
 
-  return WithAuthComponent;
+  return WithAuthWrapper;
 };
 
 export default withAuth;
