@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -33,15 +33,30 @@ const ForgotPassword = () => {
           email: values.email,
         });
         toast.success('Instructions envoyées à votre adresse email.');
+        formik.resetForm();
+        router.replace('/login')
       } catch (error) {
         toast.error('Erreur lors de l\'envoi des instructions.');
       } finally {
         setIsLoading(false);
       }
-      formik.resetForm();
-      router.replace('/login')
     },
   });
+
+  useEffect(() => {
+    // Configurez axios pour inclure le token CSRF dans chaque requête
+    const metaTag = document.querySelector('meta[name="csrf-token"]');
+    if (metaTag) {
+      const csrfToken = metaTag.getAttribute('content');
+      if (csrfToken) {
+        api.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
+      } else {
+        console.error('CSRF token not found in meta tag');
+      }
+    } else {
+      console.error('CSRF meta tag not found');
+    }
+  }, []);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-100 p-6">

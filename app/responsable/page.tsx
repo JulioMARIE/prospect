@@ -4,10 +4,9 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserCircle, faPlus, faList, faBullseye, faUserCog, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { faUserCircle, faList, faBullseye, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import CommercialList from './dash/commercialList';
 import ProspectionList from './dash/prospectionList';
-import PermissionManagement from './dash/permissionManagement';
 import ProfilePage from './dash/profilPage';
 import withAuth from '../utils/withAuth';
 
