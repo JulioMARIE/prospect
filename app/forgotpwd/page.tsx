@@ -43,21 +43,6 @@ const ForgotPassword = () => {
     },
   });
 
-  useEffect(() => {
-    // Configurez axios pour inclure le token CSRF dans chaque requête
-    const metaTag = document.querySelector('meta[name="csrf-token"]');
-    if (metaTag) {
-      const csrfToken = metaTag.getAttribute('content');
-      if (csrfToken) {
-        api.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
-      } else {
-        console.error('CSRF token not found in meta tag');
-      }
-    } else {
-      console.error('CSRF meta tag not found');
-    }
-  }, []);
-
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-100 p-6">
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
